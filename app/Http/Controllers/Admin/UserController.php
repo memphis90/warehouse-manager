@@ -9,19 +9,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
-class UserController extends Controller
+class UserController extends BaseController
 {
     public function index()
     {
-        return Inertia::render('Admin/Users/Index', [
-            'users' => User::with('roles')->paginate(10),
-            'navigation' => config('navigation.admin')
+        return $this->renderAdmin('Admin/Users/Index', [  // E qui
+            'users' => User::with('roles')->paginate(10)
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('Admin/Users/Create', [
+         return $this->renderAdmin('Admin/Users/Create', [
             'roles' => Role::all()
         ]);
     }
@@ -49,14 +48,14 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        return Inertia::render('Admin/Users/Show', [
-            'user' => $user->load('roles')
-        ]);
+       return $this->renderAdmin('Admin/Users/Show', [
+        'user' => $user->load('roles')
+    ]);
     }
 
     public function edit(User $user)
     {
-        return Inertia::render('Admin/Users/Edit', [
+            return $this->renderAdmin('Admin/Users/Edit', [
             'user' => $user->load('roles'),
             'roles' => Role::all()
         ]);
