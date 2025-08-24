@@ -23,6 +23,8 @@ class ItemSeeder extends Seeder
                 'name' => $item['name'],
                 'description' => $item['description'],
                 'category_id' => $item['category_id'],
+                'quantity' => $item['quantity'],
+                'status' => $item['status'],
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Request;
+use App\Models\Item;
 use App\Models\RequestStatus;
 use Illuminate\Http\Request as HttpRequest;
 use Inertia\Inertia;
+use App\Models\RequestType;
 
 class RequestController extends Controller
 {
@@ -18,28 +20,14 @@ class RequestController extends Controller
         return Inertia::render('Admin/Requests/Index', [
             'requests' => Request::with(['user', 'status', 'requestType', 'requestItems.item'])
                 ->latest()
-                ->paginate(10)
+                ->paginate(10),
+            'requestStatuses' => RequestStatus::all(),
+            'requestTypes' => RequestType::all(),
         ]);
     }
 
     /**
      * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
      */
     public function show(Request $request)
         {
@@ -47,14 +35,6 @@ class RequestController extends Controller
                 'request' => $request->load(['user', 'status', 'requestType', 'requestItems.item', 'admin'])
             ]);
         }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
 
     /**
      * Update the specified resource in storage.
