@@ -8,14 +8,14 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class ItemController extends BaseController
+class ItemController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-         return $this->renderAdmin('Admin/Items/Index', [
+         return Inertia::render('Admin/Items/Index', [
             'items' => Item::with('category')->paginate(10)
         ]);
     }
@@ -25,7 +25,7 @@ class ItemController extends BaseController
      */
     public function create()
     {
-         return $this->renderAdmin('Admin/Items/Create', [
+         return Inertia::render('Admin/Items/Create', [
             'categories' => Category::all()
         ]);
     }
@@ -55,7 +55,7 @@ class ItemController extends BaseController
      */
     public function show(Item $item)
     {
-       return $this->renderAdmin('Admin/Items/Show', [
+       return Inertia::render('Admin/Items/Show', [
             'item' => $item->load('category', 'requestItems.request.user')
         ]);
     }
@@ -65,7 +65,7 @@ class ItemController extends BaseController
      */
     public function edit(Item $item)
     {
-       return $this->renderAdmin('Admin/Items/Edit', [
+       return Inertia::render('Admin/Items/Edit', [
             'item' => $item,
             'categories' => Category::all()
         ]);

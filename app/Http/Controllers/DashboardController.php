@@ -30,7 +30,6 @@ class DashboardController extends Controller
                 'total_items' => Item::count(),
                 'total_users' => User::count(),
             ],
-            'navigation' => config('navigation.admin')
         ]);
     }
 
@@ -38,7 +37,6 @@ class DashboardController extends Controller
     {
          return Inertia::render('User/Dashboard', [
             'my_requests' => auth()->user()->load('requests.requestItems.item')->requests,
-            'navigation' => config('navigation.user')
         ]);
     }
 }
