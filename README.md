@@ -105,13 +105,12 @@ php artisan make:migration create_table_name
 php artisan make:seeder TableNameSeeder
 ```
 
-### Inertia.js commands
+### Commands
 ```bash
-# Clear Inertia cache
-php artisan inertia:start-ssr
+# Create Item
+php artisan items:create
 
-# Create Inertia middleware (if needed)
-php artisan inertia:middleware
+
 ```
 
 ## Project Structure

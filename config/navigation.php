@@ -35,12 +35,7 @@ return [
             'icon' => 'dashboard',
             'active' => ['dashboard']
         ],
-        [
-            'name' => 'My Requests',
-            'route' => 'user.requests.index',
-            'icon' => 'requests',
-            'active' => ['user.requests.*']
-        ],
+    
         [
             'name' => 'New Request',
             'route' => 'user.requests.create',
