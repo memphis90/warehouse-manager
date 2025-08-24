@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\Request;
+use App\Facades\RequestFacade as RequestFacade;
 use App\Models\Item;
 use App\Models\RequestType;
 use App\Models\RequestStatus;
-use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 
@@ -18,6 +18,8 @@ class RequestController extends Controller
      */
     public function index()
     {
+
+
         return Inertia::render('User/Requests/Index', [
             'requests' => auth()->user()
                 ->requests()
@@ -34,36 +36,39 @@ class RequestController extends Controller
     {
         return Inertia::render('User/Requests/Create', [
             'items' => Item::with('category')->where('status', 'available')->get(),
-            'request_types' => RequestType::all()
+            'request_types' => RequestType::all(),
+            'items' => Item::where('status', 'available')->get(),
         ]);
     }
     /**
      * Store a newly created resource in storage.
      */
-    public function store(HttpRequest $httpRequest)
+    public function store(Request $newRequest)
     {
-        $validated = $httpRequest->validate([
-            'request_type_id' => 'required|exists:request_types,id',
+        $validated = $newRequest->validate([        
             'notes' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.item_id' => 'required|exists:items,id',
+            'items' => 'required|array|min:1',    
             'items.*.quantity' => 'required|integer|min:1',
+            'items.*.item_id' => 'nullable|integer|exists:items,id', // ora opzionale
             'items.*.needed_from' => 'required|date|after_or_equal:today',
-            'items.*.needed_until' => 'required|date|after:items.*.needed_from',
-            'items.*.notes' => 'nullable|string',
+            'items.*.needed_to' => 'required|date|after:items.*.needed_from',
         ]);
 
        DB::beginTransaction();
         try {
-            $request = Request::create([
+
+            $request = RequestFacade::create([
                 'user_id' => auth()->id(),
-                'request_type_id' => $validated['request_type_id'],
+                'request_type_id' => !empty($validated['id']) ? 1 : 2 ,
                 'status_id' => RequestStatus::where('name', 'pending')->first()->id,
                 'notes' => $validated['notes'],
                 'requested_at' => now(),
             ]);
 
             foreach ($validated['items'] as $item) {
+                $item = Item::find($item['item_id'] ?? null);  
+
+
                 $request->requestItems()->create($item);
             }
             

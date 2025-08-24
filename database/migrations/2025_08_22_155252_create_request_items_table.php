@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('request_items', function (Blueprint $table) {
         $table->id();
         $table->foreignId('request_id')->constrained()->onDelete('cascade');
-        $table->foreignId('item_id')->constrained()->onDelete('cascade');
+        $table->foreignId('item_id')->nullable()->constrained()->onDelete('cascade');
         $table->integer('quantity');
         $table->dateTime('needed_from');
         $table->dateTime('needed_to');

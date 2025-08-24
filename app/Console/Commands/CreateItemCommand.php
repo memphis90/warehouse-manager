@@ -15,7 +15,7 @@ class CreateItemCommand extends Command
                           {--category= : The category ID or name}';
                          
 
-    protected $description = 'Create a new item interactively or with parameters';
+    protected $description = 'Create a new item in the inventory';
 
     public function handle()
     {
@@ -28,7 +28,7 @@ class CreateItemCommand extends Command
     private function runInteractive()
     {
         // Nome dell'item
-        $name = $this->option('name') ?: $this->ask('Item name');
+        $name = $this->ask('Item name');
         
         if (empty($name)) {
             $this->error('Name is required!');
@@ -44,19 +44,18 @@ class CreateItemCommand extends Command
         }
 
         // Descrizione
-        $description = $this->option('description') ?: 
-                      $this->ask('Description (optional)', '');
+        $description = $this->ask('Description (optional)', '');
 
         // Quantità
-        $quantity = $this->option('quantity');
-        if (!$quantity) {
-            do {
-                $quantity = $this->ask('Quantity');
+        $quantity = $this->ask('Quantity');
                 if (!is_numeric($quantity) || $quantity < 0) {
                     $this->error('Please enter a valid positive number');
                     $quantity = null;
                 }
-            } while (!$quantity);
+
+       if (!is_numeric($quantity) || $quantity < 0) {
+            $this->error('Name is required!');
+            return 1;
         }
 
         // Categoria
