@@ -4,7 +4,6 @@
             <select v-model="item.id" @change="item.isNewItem = (item.id === 'new')" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500">
                 <option value="">Seleziona oggetto</option>
                 <option v-for="o in items" :key="o.id" :value="o.id">{{ o.name }}</option>
-                <option value="new">Nuovo oggetto</option>
             </select>
 
             <input v-if="item.isNewItem" type="text" v-model="item.name" placeholder="Nome nuovo oggetto"

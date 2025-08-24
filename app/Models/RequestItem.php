@@ -14,6 +14,7 @@ class RequestItem extends Model
         'item_id',
         'quantity',
         'needed_from',
+        'name',
         'needed_to',
         'notes'
     ];

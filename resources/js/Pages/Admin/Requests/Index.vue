@@ -61,6 +61,19 @@
                             </div>
                         </div>
 
+                        <!-- Debug Info (rimuovere in produzione) -->
+                        <div v-if="false" class="mb-4 p-4 bg-gray-100 text-xs">
+                            <p><strong>Debug Info:</strong></p>
+                            <p>Requests type: {{ typeof requests }}</p>
+                            <p>Has data property: {{ !!requests.data }}</p>
+                            <p>Data is array: {{ Array.isArray(requests.data || requests) }}</p>
+                            <p>Data length: {{ (requests.data || requests || []).length }}</p>
+                            <div v-if="(requests.data || requests || []).length > 0">
+                                <p><strong>First request structure:</strong></p>
+                                <pre class="text-xs">{{ JSON.stringify((requests.data || requests)[0], null, 2).substring(0, 800) }}...</pre>
+                            </div>
+                        </div>
+
                         <!-- Requests Table -->
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
@@ -70,13 +83,13 @@
                                             User
                                         </th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Items
+                                            Items & Dates
                                         </th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Type
                                         </th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Period
+                                            Overall Period
                                         </th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Status
@@ -92,26 +105,49 @@
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     <tr v-for="request in filteredRequests" :key="request.id" class="hover:bg-gray-50">
                                         <td class="px-6 py-4">
-                                            <div>
+                                            <div v-if="request.user">
                                                 <div class="text-sm font-medium text-gray-900">
-                                                    {{ request.user.name }}
+                                                    {{ request.user.name || 'N/A' }}
                                                 </div>
                                                 <div class="text-sm text-gray-500">
-                                                    {{ request.user.email }}
+                                                    {{ request.user.email || 'N/A' }}
                                                 </div>
+                                            </div>
+                                            <div v-else class="text-sm text-gray-500 italic">
+                                                User not available
                                             </div>
                                         </td>
                                         
                                         <td class="px-6 py-4">
                                             <div v-if="request.request_items && request.request_items.length > 0">
-                                                <div v-for="(requestItem, index) in request.request_items.slice(0, 2)" :key="requestItem.id" class="mb-1">
-                                                    <div class="text-sm font-medium text-gray-900">
-                                                        {{ requestItem.item.name }}
-                                                        <span class="text-xs text-gray-500">(qty: {{ requestItem.quantity }})</span>
+                                                <!-- Mostra tutti gli items con le loro date specifiche -->
+                                                <div v-for="(requestItem, index) in request.request_items" :key="requestItem.id || index" 
+                                                     class="mb-2 last:mb-0 p-2 bg-gray-50 rounded">
+                                                    <div class="flex justify-between items-start">
+                                                        <div class="flex-1">
+                                                            <div class="text-sm font-medium text-gray-900">
+                                                                {{ requestItem.item?.name || 'Unknown Item' }}
+                                                            </div>
+                                                            <div class="text-xs text-gray-600 mt-1">
+                                                                Qty: <span class="font-medium">{{ requestItem.quantity || 0 }}</span>
+                                                                <span v-if="requestItem.item?.category" class="ml-2">
+                                                                    • {{ requestItem.item.category.name }}
+                                                                </span>
+                                                            </div>
+                                                            <!-- Date specifiche per item -->
+                                                            <div v-if="requestItem.needed_from && requestItem.needed_to" 
+                                                                 class="text-xs text-blue-600 mt-1 font-medium">
+                                                                📅 {{ formatDate(requestItem.needed_from) }} → {{ formatDate(requestItem.needed_to) }}
+                                                            </div>
+                                                            <!-- Indicatore disponibilità (se hai l'attributo) -->
+                                                            <div v-if="requestItem.item && requestItem.item.available_quantity !== undefined" 
+                                                                 class="text-xs mt-1">
+                                                                <span :class="requestItem.quantity <= requestItem.item.available_quantity ? 'text-green-600' : 'text-red-600'">
+                                                                    Available: {{ requestItem.item.available_quantity }}/{{ requestItem.item.quantity }}
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div v-if="request.request_items.length > 2" class="text-xs text-gray-500">
-                                                    +{{ request.request_items.length - 2 }} more items
                                                 </div>
                                             </div>
                                             <div v-else class="text-sm text-gray-500 italic">
@@ -120,40 +156,56 @@
                                         </td>
                                         
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span :class="getRequestTypeClass(request.request_type.name)"
+                                            <span v-if="request.request_type"
+                                                  :class="getRequestTypeClass(request.request_type.name)"
                                                   class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
                                                 {{ request.request_type.name }}
+                                            </span>
+                                            <span v-else class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                N/A
                                             </span>
                                         </td>
                                         
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            <div v-if="request.request_items && request.request_items.length > 0 && request.request_items[0].needed_from">
-                                                <div class="text-xs">
-                                                    {{ formatDate(request.request_items[0].needed_from) }}
+                                            <!-- Riassunto periodo generale della richiesta -->
+                                            <div v-if="getRequestDateRange(request).hasValidRange" class="space-y-1">
+                                                <div class="text-xs font-medium text-gray-800">
+                                                    📊 Request Period:
+                                                </div>
+                                                <div class="text-xs text-gray-600">
+                                                    {{ formatDate(getRequestDateRange(request).minDate) }}
                                                 </div>
                                                 <div class="text-xs text-gray-500">
-                                                    to {{ formatDate(request.request_items[0].needed_to) }}
+                                                    to {{ formatDate(getRequestDateRange(request).maxDate) }}
+                                                </div>
+                                                <div v-if="getRequestDateRange(request).itemsCount > 1" 
+                                                     class="text-xs text-blue-500">
+                                                    ({{ getRequestDateRange(request).itemsCount }} items)
                                                 </div>
                                             </div>
-                                            <div v-else class="text-gray-400">
-                                                N/A
+                                            <div v-else class="text-gray-400 text-xs">
+                                                No valid dates
                                             </div>
                                         </td>
                                         
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span :class="getStatusClass(request.status.name)"
+                                            <span v-if="request.status"
+                                                  :class="getStatusClass(request.status.name)"
                                                   class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
                                                 {{ request.status.name }}
+                                            </span>
+                                            <span v-else class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                Unknown Status
                                             </span>
                                         </td>
                                         
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ formatDate(request.requested_at) }}
+                                            {{ formatDate(request.requested_at || request.created_at) }}
                                         </td>
                                         
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div class="flex justify-end space-x-3">
-                                                <button 
+                                                <button v-if="isPending(request.status?.name)"
                                                         @click="updateStatus(request, 'Approved')" 
                                                         class="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
                                                         title="Approve Request">
@@ -162,7 +214,7 @@
                                                     </svg>
                                                 </button>
                                                 
-                                                <button 
+                                                <button v-if="isPending(request.status?.name)"
                                                         @click="updateStatus(request, 'Rejected')" 
                                                         class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                                                         title="Reject Request">
@@ -170,6 +222,11 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                                     </svg>
                                                 </button>
+
+                                                <span v-if="!isPending(request.status?.name)" 
+                                                      class="text-gray-400 text-xs">
+                                                    {{ request.status?.name || 'No actions' }}
+                                                </span>
                                             </div>
                                         </td>
                                     </tr>
@@ -195,7 +252,7 @@
                                 <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                                     <div>
                                         <p class="text-sm text-gray-700">
-                                            Showing {{ requests.from }} to {{ requests.to }} of {{ requests.total }} results
+                                            Showing {{ requests.from || 0 }} to {{ requests.to || 0 }} of {{ requests.total || 0 }} results
                                         </p>
                                     </div>
                                     <div>
@@ -228,7 +285,9 @@
                             </svg>
                             <h3 class="mt-2 text-sm font-medium text-gray-900">No requests found</h3>
                             <p class="mt-1 text-sm text-gray-500">
-                                No requests match the current filters.
+                                {{ filteredRequests.length === 0 && (filters.status || filters.type || filters.user) 
+                                    ? 'No requests match the current filters.' 
+                                    : 'No requests have been submitted yet.' }}
                             </p>
                         </div>
                     </div>
@@ -266,19 +325,66 @@ const filters = ref({
 })
 
 const filteredRequests = computed(() => {
-    const data = props.requests.data || props.requests
-    return data.filter(request => {
-        const matchesStatus = !filters.value.status || request.status.name === filters.value.status
-        const matchesType = !filters.value.type || request.request_type.name === filters.value.type
-        const matchesUser = !filters.value.user || 
-          request.user.name.toLowerCase().includes(filters.value.user.toLowerCase()) ||
-          request.user.email.toLowerCase().includes(filters.value.user.toLowerCase())
+    try {
+        const data = props.requests?.data || props.requests
         
-        return matchesStatus && matchesType && matchesUser
-    })
+        if (!data || !Array.isArray(data)) {
+            console.warn('Requests data is not a valid array:', data)
+            return []
+        }
+        
+        return data.filter(request => {
+            // Extra safety check
+            if (!request || typeof request !== 'object') {
+                return false
+            }
+            
+            // Safe status check - multiple fallbacks
+            let matchesStatus = true
+            if (filters.value.status) {
+                matchesStatus = !!(
+                    request.status && 
+                    typeof request.status === 'object' && 
+                    request.status.name && 
+                    request.status.name === filters.value.status
+                )
+            }
+            
+            // Safe type check - multiple fallbacks
+            let matchesType = true
+            if (filters.value.type) {
+                matchesType = !!(
+                    request.request_type && 
+                    typeof request.request_type === 'object' && 
+                    request.request_type.name && 
+                    request.request_type.name === filters.value.type
+                )
+            }
+            
+            // Safe user check - multiple fallbacks
+            let matchesUser = true
+            if (filters.value.user) {
+                const searchTerm = filters.value.user.toLowerCase()
+                matchesUser = !!(
+                    request.user && 
+                    typeof request.user === 'object' && (
+                        (request.user.name && request.user.name.toLowerCase().includes(searchTerm)) ||
+                        (request.user.email && request.user.email.toLowerCase().includes(searchTerm))
+                    )
+                )
+            }
+            
+            return matchesStatus && matchesType && matchesUser
+        })
+    } catch (error) {
+        console.error('Error in filteredRequests:', error)
+        return []
+    }
 })
 
 const getStatusClass = (status) => {
+    if (!status) return 'bg-gray-100 text-gray-800'
+    
     const statusLower = status.toLowerCase()
     if (statusLower.includes('pending') || statusLower.includes('attesa')) {
         return 'bg-yellow-100 text-yellow-800'
@@ -291,6 +397,8 @@ const getStatusClass = (status) => {
 }
 
 const getRequestTypeClass = (type) => {
+    if (!type) return 'bg-gray-100 text-gray-800'
+    
     const typeLower = type.toLowerCase()
     if (typeLower.includes('existing') || typeLower.includes('esistente')) {
         return 'bg-blue-100 text-blue-800'
@@ -299,11 +407,18 @@ const getRequestTypeClass = (type) => {
 }
 
 const isPending = (status) => {
+    if (!status) return false
+    
     const statusLower = status.toLowerCase()
     return statusLower.includes('pending') || statusLower.includes('attesa')
 }
 
 const updateStatus = (request, newStatusName) => {
+    if (!request || !request.id) {
+        Swal.fire('Error!', 'Invalid request.', 'error')
+        return
+    }
+
     const newStatus = props.requestStatuses.find(s => 
         s.name.toLowerCase() === newStatusName.toLowerCase()
     )
@@ -341,11 +456,47 @@ const updateStatus = (request, newStatusName) => {
     })
 }
 
+const getRequestDateRange = (request) => {
+    if (!request.request_items || !Array.isArray(request.request_items)) {
+        return { hasValidRange: false }
+    }
+
+    const validDates = request.request_items
+        .filter(item => item.needed_from && item.needed_to)
+        .map(item => ({
+            from: new Date(item.needed_from),
+            to: new Date(item.needed_to)
+        }))
+
+    if (validDates.length === 0) {
+        return { hasValidRange: false }
+    }
+
+    const allFromDates = validDates.map(d => d.from)
+    const allToDates = validDates.map(d => d.to)
+
+    const minDate = new Date(Math.min(...allFromDates))
+    const maxDate = new Date(Math.max(...allToDates))
+
+    return {
+        hasValidRange: true,
+        minDate,
+        maxDate,
+        itemsCount: request.request_items.length
+    }
+}
+
 const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    })
+    if (!date) return 'N/A'
+    
+    try {
+        return new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        })
+    } catch (e) {
+        return 'Invalid Date'
+    }
 }
 </script>

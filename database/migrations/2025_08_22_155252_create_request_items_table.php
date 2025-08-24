@@ -16,6 +16,7 @@ return new class extends Migration
         $table->foreignId('request_id')->constrained()->onDelete('cascade');
         $table->foreignId('item_id')->nullable()->constrained()->onDelete('cascade');
         $table->integer('quantity');
+        $table->string('name')->nullable();
         $table->dateTime('needed_from');
         $table->dateTime('needed_to');
         $table->text('notes')->nullable();

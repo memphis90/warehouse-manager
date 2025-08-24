@@ -18,11 +18,8 @@ class RequestController extends Controller
      */
     public function index()
     {
-
-
         return Inertia::render('User/Requests/Index', [
-            'requests' => auth()->user()
-                ->requests()
+            'requests' =>RequestFacade::where('user_id', auth()->id())
                 ->with(['status', 'requestType', 'requestItems.item'])
                 ->latest()
                 ->paginate(10)
@@ -37,9 +34,9 @@ class RequestController extends Controller
         return Inertia::render('User/Requests/Create', [
             'items' => Item::with('category')->where('status', 'available')->get(),
             'request_types' => RequestType::all(),
-            'items' => Item::where('status', 'available')->get(),
         ]);
     }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -49,42 +46,80 @@ class RequestController extends Controller
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',    
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.item_id' => 'nullable|integer|exists:items,id', // ora opzionale
+            'items.*.item_id' => 'nullable|integer|exists:items,id', // ora opzionale per nuovi items
             'items.*.needed_from' => 'required|date|after_or_equal:today',
             'items.*.needed_to' => 'required|date|after:items.*.needed_from',
+
+            'items.*.name' => 'nullable|string|max:255', // per nuovi items
+            'items.*.description' => 'nullable|string',
+            'items.*.category_id' => 'nullable|integer|exists:categories,id',
         ]);
 
-       DB::beginTransaction();
+        DB::beginTransaction();
         try {
+            // Determina il tipo di richiesta basato sul contenuto
+            $hasNewItems = collect($validated['items'])->some(fn($item) => empty($item['item_id']));
+            $requestTypeId = $hasNewItems ? 
+                RequestType::where('name', 'new_item')->first()?->id ?? 2 : 
+                RequestType::where('name', 'existing_item')->first()?->id ?? 1;
 
             $request = RequestFacade::create([
                 'user_id' => auth()->id(),
-                'request_type_id' => !empty($validated['id']) ? 1 : 2 ,
+                'request_type_id' => $requestTypeId,
                 'status_id' => RequestStatus::where('name', 'pending')->first()->id,
                 'notes' => $validated['notes'],
                 'requested_at' => now(),
             ]);
 
-            foreach ($validated['items'] as $item) {
-                $item = Item::find($item['item_id'] ?? null);  
-
-
-                $request->requestItems()->create($item);
+            foreach ($validated['items'] as $itemData) {
+                if (!empty($itemData['item_id'])) {
+                    // Item esistente
+                    $request->requestItems()->create([
+                        'item_id' => $itemData['item_id'],
+                        'quantity' => $itemData['quantity'],
+                        'needed_from' => $itemData['needed_from'],
+                        'needed_to' => $itemData['needed_to'],
+                    ]);
+                } else {
+                    // Nuovo item da creare - salva i dettagli per l'admin
+                    $request->requestItems()->create([
+                        'item_id' => null, // Nessun item esistente
+                        'name' => $itemData['name'],
+                        'quantity' => $itemData['quantity'],
+                        'needed_from' => $itemData['needed_from'],
+                        'needed_to' => $itemData['needed_to'],
+                        // Salva i dettagli del nuovo item richiesto
+                        'new_item_name' => $itemData['name'] ?? null,
+                        'new_item_description' => $itemData['description'] ?? null,
+                        'new_item_category_id' => $itemData['category_id'] ?? null,
+                    ]);
+                }
             }
             
             DB::commit();
+
+            return redirect()->route('user.requests.index')
+                ->with('success', 'Request created successfully');
+
         } catch (\Exception $e) {
             DB::rollback();
-            throw $e;
+            
+            // Log dell'errore per debug
+            \Log::error('Error creating request: ' . $e->getMessage(), [
+                'user_id' => auth()->id(),
+                'validated_data' => $validated,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->withErrors(['error' => 'Failed to create request. Please try again.'])
+                         ->withInput();
         }
-
-        return redirect()->route('user.requests.index')->with('success', 'Request created successfully');
     }
 
     /**
      * Display the specified resource.
      */
-   public function show(Request $request)
+    public function show(\App\Models\Request $request)
     {
         // Verifica che la richiesta appartenga all'utente loggato
         if ($request->user_id !== auth()->id()) {

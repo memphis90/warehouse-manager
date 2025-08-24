@@ -30,10 +30,10 @@ return [
     
     'user' => [
         [
-            'name' => 'Dashboard',
-            'route' => 'dashboard',
+            'name' => 'Requests',
+            'route' => 'user.requests.index',
             'icon' => 'dashboard',
-            'active' => ['dashboard']
+            'active' => ['user.requests.index']
         ],
     
         [
