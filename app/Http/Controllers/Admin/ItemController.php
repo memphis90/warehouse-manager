@@ -7,6 +7,7 @@ use App\Models\Item;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Facades\ItemFacade;
 
 class ItemController extends Controller
 {
@@ -56,7 +57,18 @@ class ItemController extends Controller
     public function show(Item $item)
     {
        return Inertia::render('Admin/Items/Show', [
-            'item' => $item->load('category', 'requestItems.request.user')
+            'item' => $item->load('category', 'requestItems.request.user'),
+
+
+
+
+
+
+            
+            'formatted_status' => ItemFacade::formatStatus($item->status),
+            'formatted_created_at' => $item->created_at->format('F j, Y \a\t g:i A'),
+            'formatted_updated_at' => $item->updated_at->format('F j, Y \a\t g:i A'),
+            'utilization_percentage' => $item->quantity > 0 ? round(($item->quantity - ($item->available_quantity ?? $item->quantity)) / $item->quantity * 100) : 0,
         ]);
     }
 
@@ -99,4 +111,5 @@ class ItemController extends Controller
         $item->delete();
         return redirect()->route('admin.items.index')->with('success', 'Item deleted successfully');
     }
+
 }

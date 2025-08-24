@@ -42,10 +42,7 @@
                                         </th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Status
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Serial
-                                        </th>
+                                        </th>  
                                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Actions
                                         </th>
@@ -85,9 +82,6 @@
                                             }" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
                                                 {{ formatStatus(item.status) }}
                                             </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {{ item.serial_number || '-' }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div class="flex justify-end space-x-3">
@@ -188,7 +182,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
 
@@ -209,9 +203,30 @@ const formatStatus = (status) => {
     return statusMap[status] || status;
 };
 
+
 const confirmDelete = (item) => {
-    if (confirm(`Are you sure you want to delete "${item.name}"? This action cannot be undone.`)) {
-        router.delete(route('admin.items.destroy', item.id));
-    }
+   Swal.fire({
+        title: 'Delete Item',
+        text: `Are you sure you want to delete ${item.name}? This action cannot be undone.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.delete(route('admin.items.destroy', item.id), {
+                onSuccess: () => {
+                    Swal.fire('Deleted!', 'Item has been deleted successfully.', 'success');
+                },
+                onError: () => {
+                    Swal.fire('Error!', 'Failed to delete item.', 'error');
+                }
+            });
+        }
+    });
 };
+
+
 </script>

@@ -134,26 +134,6 @@
                                         </p>
                                     </div>
                                 </div>
-
-                                <!-- Serial Number -->
-                                <div>
-                                    <label for="serial_number" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Serial Number
-                                    </label>
-                                    <input type="text" 
-                                           id="serial_number" 
-                                           v-model="form.serial_number"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                           :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': $page.props.errors.serial_number }"
-                                           placeholder="Enter serial number (optional)">
-                                    <p v-if="$page.props.errors.serial_number" class="mt-1 text-sm text-red-600">
-                                        {{ $page.props.errors.serial_number }}
-                                    </p>
-                                    <p class="mt-1 text-sm text-gray-500">
-                                        For tracking individual items (optional)
-                                    </p>
-                                </div>
-
                             </div>
 
                             <!-- Form Actions -->
