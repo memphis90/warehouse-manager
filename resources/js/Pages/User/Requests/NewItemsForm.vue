@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-for="(item, index) in modelValue" :key="index" class="mb-4 border p-3 rounded-md space-y-2">
-            <input type="text" v-model="item.name" placeholder="Nome oggetto da ordinare"
+            <input type="text" v-model="item.name" @input="checkIfItemNamed" placeholder="Nome oggetto da ordinare"
                    class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500" />
 
             <input type="number" v-model="item.quantity" min="1" placeholder="Quantità"
@@ -26,11 +26,11 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue';
 const props = defineProps({
     modelValue: Array
 });
-const emit = defineEmits(['update:modelValue']);
+
+const emit = defineEmits(['update:modelValue', 'itemNamed']);
 
 const addItem = () => {
     props.modelValue.push({ name: '', quantity: 1, needed_from: '', needed_to: '' });
@@ -40,5 +40,13 @@ const addItem = () => {
 const removeItem = (index) => {
     props.modelValue.splice(index, 1);
     emit('update:modelValue', props.modelValue);
+    // Ricontrolla dopo la rimozione
+    checkIfItemNamed();
+};
+
+// Funzione che controlla se almeno un item ha il nome compilato
+const checkIfItemNamed = () => {
+    const hasNamedItems = props.modelValue.some(item => item.name && item.name.trim() !== '');
+    emit('itemNamed', hasNamedItems);
 };
 </script>
