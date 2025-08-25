@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             RequestTypeSeeder::class,
             CategorySeeder::class,
             ItemSeeder::class,
+            RoleAndPermissionSeeder::class,
         ]);
     }
 }

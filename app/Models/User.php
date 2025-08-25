@@ -58,5 +58,15 @@ class User extends Authenticatable
         return $this->hasMany(Request::class, 'approved_by');
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    public function isUser(): bool
+    {
+        return $this->hasRole('user');
+    }
+
 
 }
