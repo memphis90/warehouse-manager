@@ -148,8 +148,10 @@ const submit = () => {
         onSuccess: () => {
             toast.success("Richiesta creata con successo!");
         },
-        onError: () => {
-            toast.error("Campi obbligatori non compilati!");
+        onError: (errors) => {
+             Object.keys(errors).forEach(field => {
+            toast.error(errors[field]);
+      });
         },
         onFinish: () => { 
             processing.value = false; 

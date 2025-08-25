@@ -46,9 +46,9 @@ class RequestController extends Controller
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',    
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.item_id' => 'nullable|integer|exists:items,id', // ora opzionale per nuovi items
+            'items.*.id' => 'nullable|integer|exists:items,id', // ora opzionale per nuovi items
             'items.*.needed_from' => 'required|date|after_or_equal:today',
-            'items.*.needed_to' => 'required|date|after:items.*.needed_from',
+            'items.*.needed_to' => 'required|date|after_or_equal:items.*.needed_from',
 
             'items.*.name' => 'nullable|string|max:255', // per nuovi items
             'items.*.description' => 'nullable|string',
@@ -58,7 +58,7 @@ class RequestController extends Controller
         DB::beginTransaction();
         try {
             // Determina il tipo di richiesta basato sul contenuto
-            $hasNewItems = collect($validated['items'])->some(fn($item) => empty($item['item_id']));
+            $hasNewItems = collect($validated['items'])->some(fn($item) => empty($item['id']));
             $requestTypeId = $hasNewItems ? 
                 RequestType::where('name', 'new_item')->first()?->id ?? 2 : 
                 RequestType::where('name', 'existing_item')->first()?->id ?? 1;
@@ -71,30 +71,31 @@ class RequestController extends Controller
                 'requested_at' => now(),
             ]);
 
-            foreach ($validated['items'] as $itemData) {
-                if (!empty($itemData['item_id'])) {
-                    // Item esistente
-                    $request->requestItems()->create([
-                        'item_id' => $itemData['item_id'],
-                        'quantity' => $itemData['quantity'],
-                        'needed_from' => $itemData['needed_from'],
-                        'needed_to' => $itemData['needed_to'],
-                    ]);
-                } else {
-                    // Nuovo item da creare - salva i dettagli per l'admin
-                    $request->requestItems()->create([
-                        'item_id' => null, // Nessun item esistente
-                        'name' => $itemData['name'],
-                        'quantity' => $itemData['quantity'],
-                        'needed_from' => $itemData['needed_from'],
-                        'needed_to' => $itemData['needed_to'],
-                        // Salva i dettagli del nuovo item richiesto
-                        'new_item_name' => $itemData['name'] ?? null,
-                        'new_item_description' => $itemData['description'] ?? null,
-                        'new_item_category_id' => $itemData['category_id'] ?? null,
-                    ]);
-                }
+       foreach ($validated['items'] as $itemData) {
+
+            if (!empty($itemData['id'])) {
+                // Item esistente - recupera il nome dal database
+                $existingItem = \App\Models\Item::find($itemData['id']);
+                $item_id = $existingItem->id;
+                $name = $existingItem->name;
+
+            } else {
+            // Nuovo item da creare
+                $item_id = null;
+                $name = $itemData['name']; 
             }
+
+           
+
+               $request->requestItems()->create([
+                    'item_id' => $item_id,
+                    'request_id' => $request->id,
+                    'name' => $name,
+                    'quantity' => $itemData['quantity'],
+                    'needed_from' => $itemData['needed_from'],
+                    'needed_to' => $itemData['needed_to'],
+                ]);
+        }
             
             DB::commit();
 
