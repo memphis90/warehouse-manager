@@ -1,7 +1,7 @@
 # Warehouse Manager
 
 **Nota introduttiva:**  
-Questo progetto è stato sviluppato come parte di una **code challenge a tempo limitato (~4h)**.  
+Questo progetto è stato sviluppato come parte di una **code challenge a tempo limitato**.  
 Il suo scopo principale era dimostrare capacità di progettazione, gestione di ruoli e flussi core di un gestionale, più che implementare tutte le funzionalità avanzate o test/REST API completi.
 
 ---
