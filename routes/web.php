@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\RequestController as AdminRequestController;
 use App\Http\Controllers\User\RequestController as UserRequestController;
+use App\Http\Controllers\Admin\ChartController as AdminChartController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -33,7 +34,8 @@ Route::middleware('auth')->group(function () {
         Route::resource('requests', AdminRequestController::class);
         Route::resource('items', AdminItemController::class);
         Route::resource('requests', AdminRequestController::class);
-        Route::resource('users', AdminUserController::class); // AGGIUNGI QUESTA
+        Route::resource('users', AdminUserController::class); 
+        Route::get('charts', [AdminChartController::class, 'index'])->name('charts.index');
     });
     
     // Rotte per utenti normali

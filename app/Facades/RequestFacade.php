@@ -3,6 +3,7 @@
 namespace App\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use App\Facades\ItemFacade;
 
 class RequestFacade extends Facade
 {
@@ -11,9 +12,9 @@ class RequestFacade extends Facade
         return \App\Models\Request::class;
     }
 
-    public function validateItemAvailability($itemId, $quantity, $startDate, $endDate, $excludeRequestId = null)
+    public static function validateItemAvailability($itemId, $quantity, $startDate, $endDate, $excludeRequestId = null)
     {
-        $item = Item::find($itemId);
+        $item = ItemFacade::find($itemId);
         
         if (!$item) {
             return [

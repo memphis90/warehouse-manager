@@ -126,7 +126,7 @@
                                                     <div class="flex justify-between items-start">
                                                         <div class="flex-1">
                                                             <div class="text-sm font-medium text-gray-900">
-                                                                {{ requestItem.item?.name || 'Unknown Item' }}
+                                                                {{ requestItem.name || 'Unknown Item' }}
                                                             </div>
                                                             <div class="text-xs text-gray-600 mt-1">
                                                                 Qty: <span class="font-medium">{{ requestItem.quantity || 0 }}</span>

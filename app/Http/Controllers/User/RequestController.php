@@ -55,6 +55,23 @@ class RequestController extends Controller
             'items.*.category_id' => 'nullable|integer|exists:categories,id',
         ]);
 
+        //validazione disponibilità item esistenti
+        foreach ($validated['items'] as $index => $itemData) {
+            if (!empty($itemData['id'])) {
+                $availability = RequestFacade::validateItemAvailability(
+                    $itemData['id'], 
+                    $itemData['quantity'], 
+                    $itemData['needed_from'], 
+                    $itemData['needed_to']
+                );      
+
+            if (!$availability['valid']) {
+                return back()->withErrors(["items.$index.quantity" => $availability['message']])->withInput();
+                }
+            }
+        }
+
+
         DB::beginTransaction();
         try {
             // Determina il tipo di richiesta basato sul contenuto

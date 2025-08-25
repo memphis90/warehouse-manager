@@ -161,6 +161,7 @@
 import { reactive, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
+import { useToast } from "vue-toastification";
 
 defineProps({
     roles: {
@@ -170,6 +171,7 @@ defineProps({
 });
 
 const processing = ref(false);
+const toast = useToast();
 
 const form = reactive({
     name: '',
@@ -185,11 +187,15 @@ const submit = () => {
     router.post(route('admin.users.store'), form, {
         onFinish: () => {
             processing.value = false;
+             toast.success("Utente creato con successo!");
         },
-        onError: () => {
+        onError: (errors) => {
             // Reset only password fields on error
             form.password = '';
             form.password_confirmation = '';
+            Object.keys(errors).forEach(field => {
+                toast.error(errors[field]);
+            });
         }
     });
 };

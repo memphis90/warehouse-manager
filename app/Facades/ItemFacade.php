@@ -3,6 +3,7 @@
 namespace App\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use App\Facades\RequestItemFacade;
 
 class ItemFacade extends Facade
 {
@@ -36,40 +37,50 @@ class ItemFacade extends Facade
     }
 
 
-    public function getAvailableQuantityForPeriod($startDate, $endDate, $excludeRequestId = null)
+    public static function getAvailableQuantityForPeriod($itemId, $startDate, $endDate, $excludeRequestId = null)
     {
-        $query = $this->requestItems()
-            ->whereHas('request', function($query) use ($startDate, $endDate) {
-                $query->whereHas('status', function($q) {
-                    $q->whereIn('name', ['approved', 'delivered']);
-                })
-                // Controllo sovrapposizione periodi
-                ->where(function($dateQuery) use ($startDate, $endDate) {
-                    $dateQuery->where(function($q) use ($startDate, $endDate) {
-                        // Caso 1: La richiesta inizia prima e finisce durante il periodo
-                        $q->where('start_date', '<=', $startDate)
-                        ->where('end_date', '>=', $startDate);
-                    })->orWhere(function($q) use ($startDate, $endDate) {
-                        // Caso 2: La richiesta inizia durante il periodo
-                        $q->where('start_date', '>=', $startDate)
-                        ->where('start_date', '<=', $endDate);
-                    })->orWhere(function($q) use ($startDate, $endDate) {
-                        // Caso 3: La richiesta copre completamente il periodo
-                        $q->where('start_date', '<=', $startDate)
-                        ->where('end_date', '>=', $endDate);
-                    });
-                });
-            });
-
-        // Esclude la richiesta corrente se stiamo modificando
-        if ($excludeRequestId) {
-            $query->where('request_id', '!=', $excludeRequestId);
-        }
-
-        $occupiedQuantity = $query->sum('quantity');
+        $item = self::find($itemId);
         
-        return $this->quantity - $occupiedQuantity;
-    }
+        if (!$item) {
+            return [
+                'available' => 0,
+                'error' => 'Item not found'
+            ];
+        }
+        
+        // Query overlapping request items
+        $overlappingItems = RequestItemFacade::where('item_id', $itemId)
+                ->whereHas('request', function($requestQuery) use ($excludeRequestId) {
+                    $requestQuery->whereHas('status', function($statusQuery) {
+                        $statusQuery->whereIn('name', ['approved', 'delivered']);
+                    });
+                    
+                    if ($excludeRequestId) {
+                        $requestQuery->where('id', '!=', $excludeRequestId);
+                    }
+                })
+                ->where('needed_from', '<=', $endDate)
+                ->where('needed_to', '>=', $startDate)
+                ->with(['request.status'])
+                ->get();
+            
+            $occupiedQuantity = $overlappingItems->sum('quantity');
+        
+           return [
+                'available' => max(0, $item->quantity - $occupiedQuantity),
+                'total_quantity' => $item->quantity,
+                'occupied_quantity' => $occupiedQuantity,
+                'overlapping_bookings' => $overlappingItems->map(function($requestItem) {
+                    return [
+                        'request_id' => $requestItem->request_id,
+                        'quantity' => $requestItem->quantity,
+                        'from' => $requestItem->needed_from,
+                        'to' => $requestItem->needed_to,
+                        'status' => $requestItem->request->status->name ?? 'unknown'
+                    ];
+                })
+            ];
+        }
 
 
 

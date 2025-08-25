@@ -18,7 +18,6 @@ return new class extends Migration
                 $table->foreignId('category_id')->constrained()->onDelete('cascade');
                 $table->integer('quantity')->default(0);
                 $table->enum('status', ['available', 'in_use', 'maintenance', 'retired'])->default('available');
-                $table->string('serial_number')->nullable();
                 $table->timestamps();
             });
     }

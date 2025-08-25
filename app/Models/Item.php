@@ -15,7 +15,6 @@ class Item extends Model
         'category_id', 
         'quantity', 
         'status', 
-        'serial_number'
     ];
 
     public function category()
