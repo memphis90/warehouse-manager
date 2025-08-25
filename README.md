@@ -4,7 +4,7 @@ Laravel application with Inertia.js and Vue.js for modern warehouse management.
 
 ## Tech Stack
 
-- **Backend:** Laravel 10+
+- **Backend:** Laravel 12
 - **Frontend:** Vue.js 3 + Inertia.js
 - **Database:** MySQL/PostgreSQL
 - **Styling:** Tailwind CSS
@@ -87,24 +87,6 @@ php artisan serve
 npm run dev
 ```
 
-### Database commands
-```bash
-# Fresh migration with seeding
-php artisan migrate:fresh --seed
-
-# Run migrations only
-php artisan migrate
-
-# Run seeders only
-php artisan db:seed
-
-# Create new migration
-php artisan make:migration create_table_name
-
-# Create new seeder
-php artisan make:seeder TableNameSeeder
-```
-
 ### Commands
 ```bash
 # Create Item
@@ -142,14 +124,6 @@ php artisan items:create
 - Responsive design with Tailwind CSS
 - Real-time updates
 - Database seeding for development
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
